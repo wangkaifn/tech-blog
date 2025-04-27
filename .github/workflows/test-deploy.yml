@@ -1,0 +1,98 @@
+name: 测试环境部署
+
+on:
+  # 在test-branch分支有推送时触发
+  push:
+    branches: [test-branch]
+  # 允许手动触发部署
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建文档
+        run: npm run docs:build
+
+      - name: 设置测试环境标识
+        run: |
+          echo '<div style="position:fixed; top:0; left:0; right:0; background:#ff6b6b; color:white; text-align:center; padding:8px; z-index:9999;">测试环境</div>' > testenv.html
+          cat testenv.html docs/.vitepress/dist/index.html > temp.html
+          mv temp.html docs/.vitepress/dist/index.html
+
+      - name: 准备SSH密钥和known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: 部署到测试服务器
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          TEST_SERVER_PATH: "/var/www/test-tech-blog"
+        run: |
+          # 确保测试目录存在
+          ssh $SERVER_USER@$SERVER_HOST "mkdir -p $TEST_SERVER_PATH"
+          # 部署到测试环境目录
+          rsync -avz --delete docs/.vitepress/dist/ $SERVER_USER@$SERVER_HOST:$TEST_SERVER_PATH
+          ssh $SERVER_USER@$SERVER_HOST "find $TEST_SERVER_PATH -type d -exec chmod 755 {} \; && find $TEST_SERVER_PATH -type f -exec chmod 644 {} \;"
+
+      # 设置测试环境的Nginx配置
+      - name: 配置测试环境Nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            # 创建测试环境的Nginx配置
+            cat > /tmp/test-tech-blog << EOF
+            server {
+                listen 80;
+                server_name test.front-end.qingjiai.com;
+                
+                root /var/www/test-tech-blog;
+                index index.html;
+                
+                location / {
+                    try_files \$uri \$uri/ /index.html;
+                }
+                
+                # 缓存静态资源
+                location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
+                    expires 1d;
+                    add_header Cache-Control "public, no-transform";
+                }
+                
+                # 安全相关配置
+                add_header X-Content-Type-Options nosniff;
+                add_header X-Frame-Options SAMEORIGIN;
+                add_header X-XSS-Protection "1; mode=block";
+            }
+            EOF
+
+            # 移动配置文件并启用
+            sudo mv /tmp/test-tech-blog /etc/nginx/sites-available/
+            sudo ln -sf /etc/nginx/sites-available/test-tech-blog /etc/nginx/sites-enabled/
+
+            # 检查配置并重载Nginx
+            sudo nginx -t && sudo systemctl reload nginx

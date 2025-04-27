@@ -34,3 +34,18 @@ features:
     title: CI/CD
     details: 前端自动化测试与部署
 ---
+
+# 前端技术博客 (测试分支)
+
+这是一个使用 VitePress 构建的前端技术博客测试版本。
+
+## 测试环境
+
+本站点是测试环境，用于验证新功能和内容。
+
+## 主要内容
+
+- 前端基础: HTML, CSS, JavaScript
+- 前端框架: Vue, React, Angular
+- 构建工具: Webpack, Vite
+- 部署技术: Docker, CI/CD

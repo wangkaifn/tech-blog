@@ -81,9 +81,29 @@ docs/
         └── logo.svg
 ```
 
-## 部署
+## 自动部署
 
-本项目使用 GitHub Actions 自动部署到 GitHub Pages。每当推送到 main 分支时，会自动触发构建和部署流程。
+本项目使用 GitHub Actions 进行自动部署。当代码推送到`main`分支时，会自动构建并部署到服务器。
+
+### 配置 GitHub Secrets
+
+在项目的 GitHub 仓库中，需要配置以下 Secrets：
+
+1. `SSH_PRIVATE_KEY`: 用于 SSH 连接服务器的私钥
+2. `KNOWN_HOSTS`: 服务器的 known_hosts 内容
+3. `SERVER_HOST`: 服务器 IP 地址或域名
+4. `SERVER_USER`: 服务器用户名
+
+### 配置服务器
+
+1. 确保服务器上已安装 Nginx
+2. 创建目录: `/var/www/tech-blog`
+3. 确保`deploy.sh`脚本有执行权限:
+   ```bash
+   chmod +x /var/www/tech-blog/deploy.sh
+   ```
+4. 配置部署用户对`/var/www/tech-blog`目录有写权限
+5. 配置部署用户可以无密码执行 sudo 命令（用于重启 Nginx）
 
 ## 贡献
 

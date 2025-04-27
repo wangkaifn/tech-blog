@@ -1,35 +1,59 @@
-name: Deploy to GitHub Pages
+name: 部署VitePress站点
 
 on:
   # 在main分支有推送时触发
   push:
-    branches: [main]
+    branches: [main] # 当推送到main分支时触发
   # 允许手动触发部署
-  workflow_dispatch:
+  workflow_dispatch: # 允许手动触发
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: 检出代码
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: 设置Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: 安装依赖
         run: npm ci
 
-      - name: Build
+      - name: 构建文档
         run: npm run docs:build
 
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: 准备SSH密钥和known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: 部署到服务器
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: "/var/www/tech-blog"
+        run: |
+          rsync -avz --delete docs/.vitepress/dist/ $SERVER_USER@$SERVER_HOST:$SERVER_PATH
+          ssh $SERVER_USER@$SERVER_HOST "find $SERVER_PATH -type d -exec chmod 755 {} \; && find $SERVER_PATH -type f -exec chmod 644 {} \;"
+
+      # 可选：部署后重启或重载Web服务器
+      - name: Restart Web Server
+        uses: appleboy/ssh-action@master
         with:
-          folder: docs/.vitepress/dist # 构建输出目录
-          branch: gh-pages # 部署到gh-pages分支
-          clean: true
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            # 例如，重新加载nginx配置
+            sudo systemctl reload nginx

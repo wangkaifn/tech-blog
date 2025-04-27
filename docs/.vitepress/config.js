@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 export default {
     // 站点配置
     title: "前端技术博客",
@@ -126,9 +128,9 @@ export default {
         search: {
             provider: 'algolia',
             options: {
-                appId: process.env.ALGOLIA_APP_ID || '你的AppID',
-                apiKey: process.env.ALGOLIA_API_KEY || '你的搜索API密钥',
-                indexName: process.env.ALGOLIA_INDEX_NAME || '你的索引名称',
+                appId: process.env.ALGOLIA_APP_ID,
+                apiKey: process.env.ALGOLIA_API_KEY,
+                indexName: process.env.ALGOLIA_INDEX_NAME,
                 locales: {
                     root: {
                         placeholder: '搜索文档',
