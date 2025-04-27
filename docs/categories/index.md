@@ -11,6 +11,13 @@
 - [Vue](/categories/frameworks/vue)
 - [React](/categories/frameworks/react)
 - [Angular](/categories/frameworks/angular)
+- [Next.js](/categories/frameworks/nextjs)
+- [Nuxt.js](/categories/frameworks/nuxtjs)
+
+## 服务端框架
+
+- [Node.js](/categories/server/nodejs)
+- [Nest.js](/categories/server/nestjs)
 
 ## 构建工具
 
@@ -19,7 +26,6 @@
 
 ## 服务端与部署
 
-- [Node.js](/categories/server/nodejs)
 - [Docker](/categories/deployment/docker)
 - [CI/CD](/categories/deployment/cicd)
 
