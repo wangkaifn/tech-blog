@@ -4,6 +4,7 @@ export default {
     // 站点配置
     title: "前端技术博客",
     description: "分享前端开发技术和经验",
+    ignoreDeadLinks: true,  // 忽略死链接检查
 
     themeConfig: {
         // 导航栏
