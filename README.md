@@ -33,6 +33,18 @@ npm run docs:build
 npm run docs:preview
 ```
 
+构建后的文件位于 `docs/.vitepress/dist` 目录。
+
+## 搜索功能配置
+
+项目使用 Algolia DocSearch 提供搜索功能。请在 `.env` 文件中配置以下环境变量：
+
+```
+ALGOLIA_APP_ID=您的AppID
+ALGOLIA_API_KEY=您的API密钥
+ALGOLIA_INDEX_NAME=您的索引名称
+```
+
 ## 内容结构
 
 ```
@@ -80,3 +92,7 @@ docs/
 ## 许可证
 
 MIT
+
+```
+
+```
