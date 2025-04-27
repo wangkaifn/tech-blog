@@ -5,6 +5,7 @@ node_modules
 # 构建输出
 dist
 cache
+docs/.vitepress/cache/
 
 # 本地环境变量
 .env
