@@ -27,6 +27,14 @@ jobs:
       - name: 构建文档
         run: npm run docs:build
 
+      - name: 从Secrets创建.env文件
+        env:
+          ENV_CONTENT: ${{ secrets.ENV_CONTENT }}
+        run: |
+          # 使用GitHub Secret创建.env文件
+          echo "$ENV_CONTENT" > docs/.vitepress/dist/.env
+          echo ".env文件已从Secrets创建到构建目录"
+
       - name: 设置测试环境标识
         run: |
           echo '<div style="position:fixed; top:0; left:0; right:0; background:#ff6b6b; color:white; text-align:center; padding:8px; z-index:9999;">测试环境</div>' > testenv.html
@@ -63,6 +71,17 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # 检查Nginx是否安装
+            if ! command -v nginx &> /dev/null; then
+              echo "Nginx is not installed. Installing..."
+              sudo apt-get update
+              sudo apt-get install -y nginx
+            fi
+
+            # 确保目录存在
+            sudo mkdir -p /etc/nginx/sites-available/
+            sudo mkdir -p /etc/nginx/sites-enabled/
+
             # 创建测试环境的Nginx配置
             cat > /tmp/test-tech-blog << EOF
             server {
@@ -94,4 +113,35 @@ jobs:
             sudo ln -sf /etc/nginx/sites-available/test-tech-blog /etc/nginx/sites-enabled/
 
             # 检查配置并重载Nginx
-            sudo nginx -t && sudo systemctl reload nginx
+            if nginx -v &> /dev/null; then
+              sudo nginx -t && sudo systemctl reload nginx
+              # 检查Nginx服务状态
+              echo "检查Nginx服务状态:"
+              sudo systemctl status nginx | head -n 20
+            else
+              echo "Warning: Nginx command not found. Configuration may need manual activation."
+            fi
+
+            # 检查网站是否可访问
+            echo "检查网站部署状态(端口80):"
+            if command -v curl &> /dev/null; then
+              curl -I -s http://test.front-end.qingjiai.com || echo "无法连接到网站，请检查DNS设置和防火墙规则"
+            elif command -v wget &> /dev/null; then
+              wget --spider -S http://test.front-end.qingjiai.com 2>&1 || echo "无法连接到网站，请检查DNS设置和防火墙规则"
+            else
+              echo "无法检查网站状态，请安装curl或wget"
+            fi
+
+            # 检查服务器上的端口监听情况
+            echo "检查端口监听状态:"
+            if command -v ss &> /dev/null; then
+              ss -tulpn | grep ':80'
+            elif command -v netstat &> /dev/null; then
+              netstat -tulpn | grep ':80'
+            else
+              echo "无法检查端口监听状态，请安装ss或netstat"
+            fi
+
+            # 检查网站目录权限
+            echo "检查网站目录权限:"
+            ls -la /var/www/test-tech-blog
