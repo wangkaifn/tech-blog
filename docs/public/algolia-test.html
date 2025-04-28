@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Algolia API 测试</title>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.14.2/dist/algoliasearch-lite.umd.js"></script>
+  </head>
+  <body>
+    <h1>Algolia 搜索测试</h1>
+    <input type="text" id="searchInput" placeholder="输入搜索词" />
+    <button onclick="search()">搜索</button>
+    <div id="results"></div>
+
+    <script>
+      // 初始化 Algolia 客户端
+      const client = algoliasearch(
+        "10UPAJMD8Z",
+        "317f87d8cda382394f70f0abab6f103f"
+      );
+      const index = client.initIndex(
+        "test_front_end_qingjiai_com_10upajmd8z_pages"
+      );
+
+      // 搜索函数
+      function search() {
+        const query = document.getElementById("searchInput").value;
+        const resultsDiv = document.getElementById("results");
+
+        // 清空之前的结果
+        resultsDiv.innerHTML = "<p>搜索中...</p>";
+
+        // 执行搜索
+        index
+          .search(query)
+          .then(({ hits }) => {
+            console.log("搜索结果:", hits);
+
+            if (hits.length === 0) {
+              resultsDiv.innerHTML = "<p>没有找到结果</p>";
+              return;
+            }
+
+            // 显示结果
+            let html = "<h2>搜索结果:</h2><ul>";
+            hits.forEach((hit) => {
+              html += `<li>
+              <a href="${hit.url || "#"}">${
+                hit.hierarchy?.h1 || hit.title || "无标题"
+              }</a>
+              <p>${hit._snippetResult?.content?.value || "无内容预览"}</p>
+            </li>`;
+            });
+            html += "</ul>";
+
+            resultsDiv.innerHTML = html;
+          })
+          .catch((err) => {
+            console.error("搜索错误:", err);
+            resultsDiv.innerHTML = `<p>搜索出错: ${err.message}</p>`;
+          });
+      }
+
+      // 检查索引是否存在
+      index
+        .getSettings()
+        .then((settings) => {
+          console.log("索引设置:", settings);
+          document.getElementById("results").innerHTML =
+            "<p>成功连接到 Algolia 索引!</p>";
+        })
+        .catch((err) => {
+          console.error("获取索引错误:", err);
+          document.getElementById(
+            "results"
+          ).innerHTML = `<p>索引连接错误: ${err.message}</p>`;
+        });
+    </script>
+  </body>
+</html>
